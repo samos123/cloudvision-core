@@ -1,0 +1,45 @@
+---
+- name: Install package dependencies for Hadoop
+  apt: name={{item}}
+  with_items:
+      - default-jdk
+      - ssh
+- name: Create Hadoop system group
+  group: name=hadoop
+- name: Create user account for Hadoop
+  user: name=hdfs groups=hadoop,sudo generate_ssh_key=yes shell=/bin/bash
+  register: create_user
+- name: store pub key in variable, workaround for authorized_keys module in ansible
+  shell:  cat /home/hdfs/.ssh/id_rsa.pub
+  register: pub_key
+  when: create_user.changed
+- name: Add authorized key of local user
+  authorized_key: user=hdfs key="{{ pub_key.stdout }}"
+  when: create_user.changed
+
+- name: Ensure hadoop directory is present /usr/local/hadoop
+  file: path=/usr/local/hadoop state=directory group=hadoop owner=hdfs recurse=yes
+
+- name: Copy archive from local machine to ansible remote machine and extract
+  unarchive: src=hadoop-{{ hadoop_version }}.tar.gz dest=/usr/local/hadoop creates=/usr/local/hadoop/hadoop-{{ hadoop_version }}
+
+- name: Move all from /usr/local/hadoop/hadoop-{{ hadoop_version }} to /usr/local/hadoop
+  shell: mv /usr/local/hadoop/hadoop-{{ hadoop_version }}/* /usr/local/hadoop
+  args: 
+      creates: /usr/local/hadoop/LICENSE.txt
+
+- name: Setup environment variables for hadoop
+  copy: src=ansible/hadoop-env.sh dest=/etc/profile.d/hadoop-env.sh mode=0755
+
+- name: Setup hadoop environment file
+  lineinfile: 
+      dest: /usr/local/hadoop/etc/hadoop/hadoop-env.sh
+      regexp: "^export JAVA_HOME"
+      state: present
+      line: "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64"
+
+- name: core-site.xml
+  copy: src=ansible/core-site.xml dest=/usr/local/hadoop/etc/hadoop/core-site.xml
+
+- name: hdfs-site.xml
+  copy: src=ansible/hdfs-site.xml dest=/usr/local/hadoop/etc/hadoop/hdfs-site.xml

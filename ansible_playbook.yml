@@ -1,0 +1,13 @@
+---
+- hosts: all
+  sudo: yes
+  tasks:
+    - name: Setup Tsinghua mirror as source
+      copy: src=ansible/sources.list dest=/etc/apt/sources.list force=yes
+      register: mirror
+    - apt: update_cache=yes
+      when: mirror.changed
+    - include: ansible/install_hadoop.yaml
+  vars:
+    - hadoop_version: 2.6.0
+    - apache_mirror: http://mirrors.cnnic.cn/apache/
