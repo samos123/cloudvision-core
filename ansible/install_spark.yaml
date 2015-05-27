@@ -1,0 +1,20 @@
+---
+- name: Ensure hadoop directory is present /usr/local/spark
+  file: path=/usr/local/spark state=directory group=hadoop owner=hdfs recurse=yes
+
+- name: Copy archive from local machine to ansible remote machine and extract
+  unarchive: src=spark-{{ spark_version }}-bin-hadoop2.6.tgz dest=/usr/local/spark creates=/usr/local/spark/spark-{{ spark_version }}
+
+- name: Move all from /usr/local/spark/spark-{{ spark_version }} to /usr/local/spark
+  shell: mv /usr/local/spark/spark-{{ spark_version }}/* /usr/local/spark
+  args: 
+      creates: /usr/local/spark/LICENSE
+
+- name: Setup environment variables for spark
+  copy: src=ansible/spark-env.sh dest=/etc/profile.d/spark-env.sh mode=0755
+
+- name: Setup environment variables for spark conf
+  copy: src=ansible/conf-spark-env.sh dest=/usr/local/spark/conf/spark-env.sh mode=0755
+
+- name: Configure spark single node as spark-slave
+  copy: src=ansible/spark-slaves dest=/usr/local/spark/conf/slaves mode=0755

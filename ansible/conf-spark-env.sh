@@ -1,0 +1,3 @@
+#!/bin/bash
+
+SPARK_MASTER_IP=192.168.33.10

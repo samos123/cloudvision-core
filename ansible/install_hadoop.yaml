@@ -43,3 +43,9 @@
 
 - name: hdfs-site.xml
   copy: src=ansible/hdfs-site.xml dest=/usr/local/hadoop/etc/hadoop/hdfs-site.xml
+
+- name: remove the start-all.sh, stop-all.sh command from hadoop as they conflict with spark
+  file: name={{ item }} state=absent
+  with_items:
+    - /usr/local/hadoop/sbin/start-all.sh
+    - /usr/local/hadoop/sbin/stop-all.sh
