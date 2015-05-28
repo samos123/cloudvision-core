@@ -9,6 +9,7 @@
       when: mirror.changed
     - include: ansible/install_hadoop.yaml
     - include: ansible/install_spark.yaml
+    - include: ansible/install_opencv.yaml
   vars:
     - hadoop_version: 2.6.0
     - apache_mirror: http://mirrors.cnnic.cn/apache/
