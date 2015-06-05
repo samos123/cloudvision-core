@@ -6,17 +6,24 @@ import cv2
 import numpy as np
 
 
-def extract_surf_features_opencv(imgfile_imgbytes):
-    imgfilename, imgbytes = imgfile_imgbytes
-    nparr = np.fromstring(buffer(imgbytes), np.uint8)
-    img = cv2.imdecode(nparr, 1)
-#
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    surf = cv2.xfeatures2d.SURF_create()
-#
-    kp, descriptors = surf.detectAndCompute(gray, None)
-   
-    return (imgfilename, descriptors)
+def extract_opencv_features(feature_name):
+
+    def extract_opencv_features_nested(imgfile_imgbytes):
+        imgfilename, imgbytes = imgfile_imgbytes
+        nparr = np.fromstring(buffer(imgbytes), np.uint8)
+        img = cv2.imdecode(nparr, 1)
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        if feature_name in ["surf", "SURF"]:
+            extractor = cv2.xfeatures2d.SURF_create()
+        elif feature_name in ["sift", "SIFT"]:
+            extractor = cv2.xfeatures2d.SIFT_create()
+
+        kp, descriptors = extractor.detectAndCompute(gray, None)
+
+        return (imgfilename, descriptors)
+
+    return extract_opencv_features_nested
+
 
 
 if __name__ == "__main__":
@@ -24,15 +31,16 @@ if __name__ == "__main__":
     sc = SparkContext(appName="feature_extractor")
 
     try:
-        image_seqfile_path = sys.argv[1]
-        feature_sequencefile_path = sys.argv[2]
+        feature_name = sys.argv[1]
+        image_seqfile_path = sys.argv[2]
+        feature_sequencefile_path = sys.argv[3]
     except:
-        print("Usage: spark-submit feature_extraction.py "
+        print("Usage: spark-submit feature_extraction.py <feature_name(sift or surf)> "
               "<image_sequencefile_input_path> <feature_sequencefile_output_path>")
 
     images = sc.sequenceFile(image_seqfile_path)
 
-    images_surf = images.map(extract_surf_features_opencv)
+    images_surf = images.map(extract_opencv_features(feature_name))
     images_surf = images_surf.map(lambda x: (x[0], x[1].tostring()))\
                              .saveAsSequenceFile(feature_sequencefile_path)
 
