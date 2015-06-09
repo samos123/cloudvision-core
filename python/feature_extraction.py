@@ -6,6 +6,8 @@ import os
 import cv2
 import numpy as np
 
+from utils import serialize_numpy_array, deserialize_numpy_array
+
 
 def extract_opencv_features(feature_name):
 
@@ -26,17 +28,6 @@ def extract_opencv_features(feature_name):
     return extract_opencv_features_nested
 
 
-def serialize_numpy_array(numpy_array):
-    output = io.BytesIO()
-    np.savez_compressed(output, x=numpy_array)
-    return output.getvalue()
-
-
-def deserialize_numpy_array(savez_data):
-    data = np.load(io.BytesIO(savez_data))
-    return data["x"]
-
-
 if __name__ == "__main__":
     from pyspark import SparkContext
     sc = SparkContext(appName="feature_extractor")
@@ -51,7 +42,7 @@ if __name__ == "__main__":
 
     images = sc.sequenceFile(image_seqfile_path)
 
-    images_surf = images.map(extract_opencv_features(feature_name))
-    images_surf = images_surf.map(lambda x: (x[0], serialize_numpy_array(x[1])))\
-                             .saveAsSequenceFile(feature_sequencefile_path)
+    features = images.map(extract_opencv_features(feature_name))
+    features = features.map(lambda x: (x[0], serialize_numpy_array(x[1])))
+    features.saveAsPickleFile(feature_sequencefile_path)
 
