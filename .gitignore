@@ -5,3 +5,4 @@ classes
 .project
 .classpath
 .vagrant
+*.pyc
