@@ -11,7 +11,7 @@ from utils import serialize_numpy_array, deserialize_numpy_array
 
 if __name__ == "__main__":
     from pyspark import SparkContext
-    sc = SparkContext(appName="feature_extractor")
+    sc = SparkContext(appName="kmeans_dictionary_creation")
 
     try:
         k = sys.argv[1]

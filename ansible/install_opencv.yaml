@@ -14,6 +14,7 @@
     - libavformat-dev
     - libswscale-dev
     - python-numpy
+    - python-scipy
     - libtbb2
     - libtbb-dev
     - libjpeg-dev
