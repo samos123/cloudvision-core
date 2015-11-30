@@ -13,9 +13,6 @@ from utils import serialize_numpy_array, deserialize_numpy_array
 SUPPORTED_POOLING = ["max", "sum"]
 
 def assign_pooling(img_feature_matrix, clusterCenters, pooling):
-    if pooling not in SUPPORTED_POOLING:
-        raise ValueError("Pooling method %s is not supported. Supported poolings methods: %s" % (pooling, SUPPORTED_POOLING))
-
     image_name, feature_matrix = img_feature_matrix
     clusterCenters = clusterCenters.value
     model = KMeansModel(clusterCenters)
@@ -41,10 +38,14 @@ if __name__ == "__main__":
         kmeans_model_path = sys.argv[2]
         bow_sequencefile_path = sys.argv[3]
         pooling = sys.argv[4]
+
     except:
-        print("Usage: spark-submit kmeans_assign.py "
+        print("Usage: spark-submit feature_coding_pooling.py "
               "<feature_sequencefile_path> <kmeans_model> "
               "<bow_sequencefile_path> <pooling_method:max>")
+
+    if pooling not in SUPPORTED_POOLING:
+        raise ValueError("Pooling method %s is not supported. Supported poolings methods: %s" % (pooling, SUPPORTED_POOLING))
 
     features = sc.pickleFile(feature_sequencefile_path)
     clusterCenters = sc.pickleFile(kmeans_model_path).collect()

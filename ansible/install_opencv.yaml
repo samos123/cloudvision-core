@@ -27,7 +27,7 @@
 - file: path=/opt/opencv/build state=directory
 
 - name: Get opencv source code
-  shell: git clone https://github.com/Itseez/opencv.git src chdir=/opt/opencv creates=/opt/opencv/src
+  shell: git clone https://github.com/Itseez/opencv src chdir=/opt/opencv creates=/opt/opencv/src
 
 - name: get opencv contrib source code
   shell: git clone https://github.com/Itseez/opencv_contrib.git contrib chdir=/opt/opencv/src creates=/opt/opencv/src/contrib

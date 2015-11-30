@@ -1,18 +1,21 @@
 # Cloudvision - Computer Vision Cloud Platform
 
-On demand large scale computer vision at your finger tops. Cloudvision
+On demand large scale computer vision at your finger tips. Cloudvision
 is meant to provide the computer vision industry with a scalable
 platform to solve large scale computer vision problems.
 
 
-    +----------+ +------------+  +----------------+
-    |Feature   | |Quantization|  |Machine learning|
-    |extraction| +------------+  +----------------+
+    +----------+ +--------------+  +----------------+
+    |Feature   | |Coding/Pooling|  |Machine learning|
+    |extraction| +--------------+  +----------------+
     +----------+                                   
              on top of                                                
-             +-----+ +-----+                       
-             |HDFS | |Spark|                       
-             +-----+ +-----+                       
+              +-----+                       
+              |Spark|                       
+              +-----+                       
+       +-----+ +------+
+       |HDFS | |Swift |
+       +-----+ +------+
 
 ## Setup development environment in a VM
 
