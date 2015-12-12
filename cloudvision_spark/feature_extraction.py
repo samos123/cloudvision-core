@@ -1,4 +1,5 @@
 from __future__ import print_function
+import logging
 import io
 import sys
 import os
@@ -12,18 +13,21 @@ from utils import serialize_numpy_array, deserialize_numpy_array
 def extract_opencv_features(feature_name):
 
     def extract_opencv_features_nested(imgfile_imgbytes):
-        imgfilename, imgbytes = imgfile_imgbytes
-        nparr = np.fromstring(buffer(imgbytes), np.uint8)
-        img = cv2.imdecode(nparr, 1)
-        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        if feature_name in ["surf", "SURF"]:
-            extractor = cv2.xfeatures2d.SURF_create()
-        elif feature_name in ["sift", "SIFT"]:
-            extractor = cv2.xfeatures2d.SIFT_create()
+        try:
+            imgfilename, imgbytes = imgfile_imgbytes
+            nparr = np.fromstring(buffer(imgbytes), np.uint8)
+            img = cv2.imdecode(nparr, 0)
+            if feature_name in ["surf", "SURF"]:
+                extractor = cv2.xfeatures2d.SURF_create()
+            elif feature_name in ["sift", "SIFT"]:
+                extractor = cv2.xfeatures2d.SIFT_create()
 
-        kp, descriptors = extractor.detectAndCompute(gray, None)
+            kp, descriptors = extractor.detectAndCompute(img, None)
 
-        return (imgfilename, descriptors)
+            return [(imgfilename, descriptors)]
+        except Exception, e:
+            logging.exception(e)
+            return []
 
     return extract_opencv_features_nested
 
@@ -42,7 +46,7 @@ if __name__ == "__main__":
 
     images = sc.sequenceFile(image_seqfile_path)
 
-    features = images.map(extract_opencv_features(feature_name))
+    features = images.flatMap(extract_opencv_features(feature_name))
     features = features.map(lambda x: (x[0], serialize_numpy_array(x[1])))
     features.saveAsPickleFile(feature_sequencefile_path)
 
