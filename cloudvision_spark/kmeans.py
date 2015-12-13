@@ -24,9 +24,15 @@ if __name__ == "__main__":
     features = sc.pickleFile(feature_sequencefile_path)
 
     features = features.map(lambda x: deserialize_numpy_array(x[1]))
+
+    # Create same size vectors of the feature descriptors
+    # flatMap returns every list item as a new row for the RDD
+    # hence transforming x, 128 to x rows of 1, 128 in the RDD.
+    # This is needed for KMeans.
     features = features.flatMap(lambda x: x.tolist())
     model = KMeans.train(features, int(k))
-    sc.parallelize(model.clusterCenters).saveAsPickleFile(kmeans_model_path)
+
+    model.save(sc, kmeans_model_path)
     print("Clusters have been saved as text file to %s" % kmeans_model_path)
     print("Final centers: " + str(model.clusterCenters))
     sc.stop()

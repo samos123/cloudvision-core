@@ -48,7 +48,8 @@ if __name__ == "__main__":
         raise ValueError("Pooling method %s is not supported. Supported poolings methods: %s" % (pooling, SUPPORTED_POOLING))
 
     features = sc.pickleFile(feature_sequencefile_path)
-    clusterCenters = sc.pickleFile(kmeans_model_path).collect()
+    model = KMeansModel.load(sc, kmeans_model_path)
+    clusterCenters = model.clusterCenters
     clusterCenters = sc.broadcast(clusterCenters)
 
     features = features.map(lambda x: (x[0], deserialize_numpy_array(x[1])))
