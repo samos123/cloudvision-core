@@ -38,16 +38,17 @@ if __name__ == "__main__":
         kmeans_model_path = sys.argv[2]
         bow_sequencefile_path = sys.argv[3]
         pooling = sys.argv[4]
+        partitions = int(sys.argv[5])
 
     except:
         print("Usage: spark-submit feature_coding_pooling.py "
               "<feature_sequencefile_path> <kmeans_model> "
-              "<bow_sequencefile_path> <pooling_method:max>")
+              "<bow_sequencefile_path> <pooling_method:max> <partitions>")
 
     if pooling not in SUPPORTED_POOLING:
         raise ValueError("Pooling method %s is not supported. Supported poolings methods: %s" % (pooling, SUPPORTED_POOLING))
 
-    features = sc.pickleFile(feature_sequencefile_path)
+    features = sc.pickleFile(feature_sequencefile_path).repartition(partitions)
     model = KMeansModel.load(sc, kmeans_model_path)
     clusterCenters = model.clusterCenters
     clusterCenters = sc.broadcast(clusterCenters)

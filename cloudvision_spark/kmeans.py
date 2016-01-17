@@ -14,14 +14,15 @@ if __name__ == "__main__":
     sc = SparkContext(appName="kmeans_dictionary_creation")
 
     try:
-        k = sys.argv[1]
+        k = int(sys.argv[1])
         feature_sequencefile_path = sys.argv[2]
         kmeans_model_path = sys.argv[3]
+        partitions = int(sys.argv[4])
     except:
         print("Usage: spark-submit kmeans.py <k:clusters> "
-              "<feature_sequencefile_input_path> <kmeans_model_output>")
+              "<feature_sequencefile_input_path> <kmeans_model_output> <partitions>")
 
-    features = sc.pickleFile(feature_sequencefile_path)
+    features = sc.pickleFile(feature_sequencefile_path, minPartitions=partitions)
 
     features = features.map(lambda x: deserialize_numpy_array(x[1]))
 
@@ -29,8 +30,8 @@ if __name__ == "__main__":
     # flatMap returns every list item as a new row for the RDD
     # hence transforming x, 128 to x rows of 1, 128 in the RDD.
     # This is needed for KMeans.
-    features = features.flatMap(lambda x: x.tolist())
-    model = KMeans.train(features, int(k))
+    features = features.flatMap(lambda x: x.tolist()).cache()
+    model = KMeans.train(features, k, maxIterations=10, initializationMode="random")
 
     model.save(sc, kmeans_model_path)
     print("Clusters have been saved as text file to %s" % kmeans_model_path)
