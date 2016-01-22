@@ -9,9 +9,6 @@ import numpy as np
 from pyspark import SparkContext
 from pyspark.sql import SQLContext, Row
 
-import utils
-from utils import serialize_numpy_array, deserialize_numpy_array, log, log_memory_usage
-
 
 def extract_opencv_features(feature_name):
 
@@ -26,8 +23,6 @@ def extract_opencv_features(feature_name):
                 extractor = cv2.SIFT()
 
             kp, descriptors = extractor.detectAndCompute(img, None)
-
-            log_memory_usage()
 
             return [(imgfilename, descriptors)]
         except Exception, e:
@@ -44,7 +39,7 @@ if __name__ == "__main__":
     try:
         feature_name = sys.argv[1]
         image_seqfile_path = sys.argv[2]
-        feature_sequencefile_path = sys.argv[3]
+        feature_parquet_path = sys.argv[3]
         partitions = int(sys.argv[4])
     except:
         print("Usage: spark-submit feature_extraction.py <feature_name(sift or surf)> "
@@ -54,7 +49,7 @@ if __name__ == "__main__":
 
     features = images.flatMap(extract_opencv_features(feature_name))
     features = features.filter(lambda x: x[1] != None)
-    features = features.map(lambda x: (Row(fileName=x[0], features=serialize_numpy_array(x[1]))))
+    features = features.map(lambda x: (Row(fileName=x[0], features=x[1].tolist())))
     featuresSchema = sqlContext.createDataFrame(features)
     featuresSchema.registerTempTable("images")
-    featuresSchema.write.parquet(feature_sequencefile_path)
+    featuresSchema.write.parquet(feature_parquet_path)

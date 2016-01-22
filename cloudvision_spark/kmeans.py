@@ -4,33 +4,30 @@ import sys
 import os
 
 import numpy as np
+from pyspark import SparkContext
 from pyspark.mllib.clustering import KMeans
-
-from utils import serialize_numpy_array, deserialize_numpy_array
+from pyspark.sql import SQLContext, Row
 
 
 if __name__ == "__main__":
-    from pyspark import SparkContext
     sc = SparkContext(appName="kmeans_dictionary_creation")
+    sqlContext = SQLContext(sc)
 
     try:
         k = int(sys.argv[1])
-        feature_sequencefile_path = sys.argv[2]
+        feature_parquet_path = sys.argv[2]
         kmeans_model_path = sys.argv[3]
-        partitions = int(sys.argv[4])
     except:
         print("Usage: spark-submit kmeans.py <k:clusters> "
-              "<feature_sequencefile_input_path> <kmeans_model_output> <partitions>")
+              "<feature_sequencefile_input_path> <kmeans_model_output>")
 
-    features = sc.pickleFile(feature_sequencefile_path, minPartitions=partitions)
-
-    features = features.map(lambda x: deserialize_numpy_array(x[1]))
+    features = sqlContext.read.parquet(feature_parquet_path)
 
     # Create same size vectors of the feature descriptors
     # flatMap returns every list item as a new row for the RDD
     # hence transforming x, 128 to x rows of 1, 128 in the RDD.
     # This is needed for KMeans.
-    features = features.flatMap(lambda x: x.tolist()).cache()
+    features = features.flatMap(lambda x: x['features']).cache()
     model = KMeans.train(features, k, maxIterations=10, initializationMode="random")
 
     model.save(sc, kmeans_model_path)

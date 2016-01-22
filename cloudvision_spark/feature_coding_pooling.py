@@ -7,13 +7,14 @@ import os
 import numpy as np
 from scipy.spatial import distance
 from pyspark.mllib.clustering import KMeansModel
-
-from utils import serialize_numpy_array, deserialize_numpy_array
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
 
 SUPPORTED_POOLING = ["max", "sum"]
 
-def assign_pooling(img_feature_matrix, clusterCenters, pooling):
-    image_name, feature_matrix = img_feature_matrix
+def assign_pooling(row, clusterCenters, pooling):
+    image_name = row['fileName']
+    feature_matrix = np.array(row['features'])
     clusterCenters = clusterCenters.value
     model = KMeansModel(clusterCenters)
     bow = np.zeros(len(clusterCenters))
@@ -26,37 +27,35 @@ def assign_pooling(img_feature_matrix, clusterCenters, pooling):
         elif pooling == "sum":
             bow[k] = bow[k] + dist
 
-    return (image_name, bow)
+    return Row(fileName=image_name, bow=bow.tolist())
 
 
 if __name__ == "__main__":
-    from pyspark import SparkContext
     sc = SparkContext(appName="kmeans_assign")
+    sqlContext = SQLContext(sc)
 
     try:
-        feature_sequencefile_path = sys.argv[1]
+        feature_parquet_path = sys.argv[1]
         kmeans_model_path = sys.argv[2]
-        bow_sequencefile_path = sys.argv[3]
+        bow_parquet_path = sys.argv[3]
         pooling = sys.argv[4]
-        partitions = int(sys.argv[5])
 
     except:
         print("Usage: spark-submit feature_coding_pooling.py "
               "<feature_sequencefile_path> <kmeans_model> "
-              "<bow_sequencefile_path> <pooling_method:max> <partitions>")
+              "<bow_sequencefile_path> <pooling_method:max>")
 
     if pooling not in SUPPORTED_POOLING:
         raise ValueError("Pooling method %s is not supported. Supported poolings methods: %s" % (pooling, SUPPORTED_POOLING))
 
-    features = sc.pickleFile(feature_sequencefile_path).repartition(partitions)
+    features = sqlContext.read.parquet(feature_parquet_path)
     model = KMeansModel.load(sc, kmeans_model_path)
     clusterCenters = model.clusterCenters
     clusterCenters = sc.broadcast(clusterCenters)
 
-    features = features.map(lambda x: (x[0], deserialize_numpy_array(x[1])))
     features_bow = features.map(functools.partial(assign_pooling,
         clusterCenters=clusterCenters, pooling=pooling))
-
-    features_bow = features_bow.map(lambda x: (x[0], serialize_numpy_array(x[1])))
-    features_bow.saveAsPickleFile(bow_sequencefile_path)
+    featuresSchema = sqlContext.createDataFrame(features_bow)
+    featuresSchema.registerTempTable("images")
+    featuresSchema.write.parquet(bow_parquet_path)
     sc.stop()

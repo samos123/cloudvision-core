@@ -7,12 +7,12 @@ import os
 from pympler import muppy, summary
 
 
-log_dir = "/tmp/spark-executors/"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-logging.basicConfig(filename=log_dir + "all.log",
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(message)s')
+#log_dir = "/tmp/spark-executors/"
+#if not os.path.exists(log_dir):
+#    os.makedirs(log_dir)
+#logging.basicConfig(filename=log_dir + "all.log",
+#                    level=logging.DEBUG,
+#                    format='%(asctime)s %(message)s')
 
 
 
