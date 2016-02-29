@@ -36,7 +36,7 @@ object FeatureExtraction {
     descriptor.getFeatures().asScala.toArray.map(x => Vectors.dense(x))
   }
 
-
+  def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Scala Feature Extraction of SURF/SIFT")
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
